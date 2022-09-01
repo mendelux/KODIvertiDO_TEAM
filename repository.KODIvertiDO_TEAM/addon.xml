@@ -1,14 +1,14 @@
 
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="repository.kodi-mexico" name="Kodi-Mexico official Repo" version="1.1.0" provider-name="KodiMexico">
-	<extension point="xbmc.addon.repository" name="Kodi-Mexico official Repo">
-		<info compressed="false">https://raw.githubusercontent.com/kodimexico/miNuevoRepo/master/addons.xml</info>
-		<checksum>https://raw.githubusercontent.com/kodimexico/miNuevoRepo/master/addons.xml.md5</checksum>
-		<datadir zip="true">https://raw.githubusercontent.com/kodimexico/miNuevoRepo/master</datadir>
+<addon id="repository.KODIvertiDO_TEAM" name="KODIvertiDO_TEAM Addon official Repo" version="1.0.0" provider-name="KODIvertiDO">
+	<extension point="xbmc.addon.repository" name="KODIvertiDO_TEAM Addon official Repo">
+		<info compressed="false">https://raw.githubusercontent.com/mendelux/KODIvertiDo_TEAM/master/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/mendelux/KODIvertiDo_TEAM/master/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.githubusercontent.com/mendelux/KODIvertiDo_TEAM/master</datadir>
 	</extension>
 	<extension point="xbmc.addon.metadata">
-		<summary>Kodi-Mexico official Repo</summary>
-   		<description lang="en">Instala los Addons de Kodi Mexico.</description>
+		<summary>KODIvertiDO_TEAM Addon official Repo</summary>
+   		<description lang="en">Instala los Addons de KODIvertiDO_TEAM.</description>
 		<disclaimer></disclaimer>
 		<platform>all</platform>
 	</extension>

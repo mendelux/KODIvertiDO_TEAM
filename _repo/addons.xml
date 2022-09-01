@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addons>
+<addon
+	id="plugin.video.KovertidoTeamTvCine" version="1.0" name="[B][COLOR white]Kodi[COLOR gold]verti[COLOR yellow]do[COLOR gold]Team[COLOR lightpink]Tv[COLOR lime]Cine[/COLOR][/B]" provider-name="equipo KODIvertiDO TEAM">
+<requires>
+    <import addon="script.module.requests" />
+    <import addon="script.module.resolveurl" />
+  </requires>
+	<extension point="xbmc.python.pluginsource" library="default.py">
+		<provides>video</provides>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+                <platform>all</platform>
+		<summary lang="en">KovertidoTeamTvCine</summary>
+		<summary lang="da">KovertidoTeamTvCine</summary>
+		<description lang="en">
+[COLOR white]Complemento gratuito que no aloja ningun contenido.               Todo el contenido se encuentra en internet.No se acepta ninguna responsabilidad por el uso de este addon.[/COLOR]</description>
+		<website></website>
+		<license>GPL 2.0</license>
+		<platform>all</platform>
+<assets>
+        <icon>icon.gif</icon>
+        <fanart>fanart.jpg</fanart>
+    </assets>
+		<language>es</language>
+	</extension>
+</addon>
+
+
+<addon id="repository.KODIvertiDO_TEAM" name="KODIvertiDO_TEAM Addon official Repo" version="1.0.0" provider-name="KODIvertiDO">
+	<extension point="xbmc.addon.repository" name="KODIvertiDO_TEAM Addon official Repo">
+		<info compressed="false">https://raw.githubusercontent.com/mendelux/KODIvertiDo_TEAM/master/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/mendelux/KODIvertiDo_TEAM/master/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.githubusercontent.com/mendelux/KODIvertiDo_TEAM/master</datadir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>KODIvertiDO_TEAM Addon official Repo</summary>
+   		<description lang="en">Instala los Addons de KODIvertiDO_TEAM.</description>
+		<disclaimer></disclaimer>
+		<platform>all</platform>
+	</extension>
+</addon>
+
+    <addon id="repository.name" name="Your Repository Name" version="1.0.0" provider-name="Your Name">
+        <requires>
+            <import addon="xbmc.addon" version="12.0.0"/>
+        </requires>
+        <extension point="xbmc.addon.repository" name="Your Repository Name">
+            <info compressed="false">https://raw.githubusercontent.com/Your-Github-Username/repository-link/_repo/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/Your-Github-Username/repository-link/_repo/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/Your-Github-Username/repository-link/_repo/</datadir>
+            <hashes>false</hashes>
+        </extension>
+        <extension point="xbmc.addon.metadata">
+            <summary>A short summary of this repository</summary>
+            <description>The description can be longer. Using [CR] you can create a newline. The use of other markup is not advised.</description>
+            <platform>all</platform>
+    </extension>
+</addon>
+</addons>
