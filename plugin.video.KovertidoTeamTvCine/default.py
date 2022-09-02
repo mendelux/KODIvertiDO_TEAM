@@ -43,7 +43,7 @@ def run():
    plugintools.close_item_list()
  
  
- class Password:
+class Password:
     def __init__(self):
         self.password = plugintools.read("http://perillas.mendelux.es/login.txt").split('"')[1].split('"')[0]
         self.profile = translatePath(xbmcaddon.Addon().getAddonInfo('profile')) if six.PY3 else translatePath(
