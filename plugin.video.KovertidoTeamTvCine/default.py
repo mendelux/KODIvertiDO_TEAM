@@ -43,33 +43,6 @@ def run():
    plugintools.close_item_list()
  
  
-class Password:
-    def __init__(self):
-        self.password = plugintools.read("http://perillas.mendelux.es/login.txt").split('"')[1].split('"')[0]
-        self.profile = translatePath(xbmcaddon.Addon().getAddonInfo('profile')) if six.PY3 else translatePath(
-            xbmcaddon.Addon().getAddonInfo('profile').decode("utf-8"))
-        self.passfile = self.profile + 'clave.txt'
-
-    def check(self):
-        global password_file
-        if not os.path.isfile(self.passfile):
-            password = xbmcgui.Dialog().input('Introduzca la contraseña para entrar:')
-            if password == plugintools.read("http://perillas.mendelux.es/login.txt").split('"')[1].split('"')[0]:
-                if not os.path.exists(self.profile): os.makedirs(self.profile)
-                password_file = self.passfile
-                f = open(password_file, 'wb')
-                f.write(password)
-                return True
-            else:
-                return False
-        else:
-            password_file = self.passfile
-            with open(self.passfile, 'r') as f:
-                password = f.read()
-            if password == plugintools.read("http://perillas.mendelux.es/login.txt").split('"')[1].split('"')[0]:
-                return True
-            else:
-                return False
 
 #---------MENU PRINCIPAL-----------------------MENU PRINCIPAL----------------------------MENU PRINCIPAL---------------------------------------
 #---------MENU PRINCIPAL-----------------------MENU PRINCIPAL----------------------------MENU PRINCIPAL---------------------------------------
@@ -128,7 +101,9 @@ def iptv(params):
 
    plugintools.add_item(action = "iptv3" , title = "[COLOR lime][B]->LISTA 3<-[/B][/COLOR]", thumbnail ="https://i.imgur.com/OqADwwu.jpg", fanart = "https://i.imgur.com/xdn0NDc.jpg", folder = True )
 
-   plugintools.add_item(action = "alegres" , title = "[COLOR lime][B]->TV ADULTOS<-[/B][/COLOR]", thumbnail ="https://i.imgur.com/niIFp0G.jpg", fanart = "https://i.imgur.com/xdn0NDc.jpg", folder = True )
+   plugintools.add_item(action = "iptv4" , title = "[COLOR lime][B]->LISTA 4<-[/B][/COLOR]", thumbnail ="https://i.imgur.com/niIFp0G.jpg", fanart = "https://i.imgur.com/xdn0NDc.jpg", folder = True )
+
+   plugintools.add_item(action = "alegres" , title = "[COLOR lime][B]->TV ADULTOS<-[/B][/COLOR]", thumbnail ="https://i.imgur.com/HCiV6ND.jpg", fanart = "https://i.imgur.com/kgSbSPb.jpg", folder = True )
 
    plugintools.add_item(action = "canalesacestream" , title = "[COLOR yellow][B]->LISTA ACESTREAM<- [COLOR lime]*<[COLOR red]Necesario Acestream[COLOR lime]>*[/B][/COLOR]", thumbnail ="https://i.imgur.com/OqADwwu.jpg", fanart = "https://i.imgur.com/xdn0NDc.jpg", folder = True )
   
@@ -223,23 +198,82 @@ def iptv3_res(params):
         if grup.strip() in seleccion:
             plugintools.add_item ( action = "resolve_without_resolveurl" , title = "[B][UPPERCASE][COLOR yellow]" + title + "[/COLOR][/UPPERCASE][/B]" , url = url , thumbnail = thumb , fanart = thumb , folder = False , isPlayable = True )
 
-
-def alegres(params):   
-	
-  
-    if Password().check() == True:
-
-        url = "http://perillas.mendelux.es/alegres.txt"
-        llamada = requests.get(url)
-        datos = llamada.text
+def iptv4(params):
     
-        matches = re.findall(r'(?s).*?name="(.*?)".*?logo="(.*?)".*?group-title.*?(http:.*?)\n', datos, re.DOTALL )
-        for title, thumb, url in matches:
+    
+    #url3 = "http://goodtv.nicenam.xyz/get.php?username=vi08220&password=2281657605&type=m3u_plus"
+    
+    #(?s).*?name="(.*?)".*?logo="(.*?)".*?title="(.*?)".*?\n.*?(ht.*?://.*?/.*?/.*?/[A-Za-z0-9_]+)
+    url = "http://perillas.mendelux.es/vio.txt"
+    llamada = requests.get(url)
+    datos = llamada.text
+    grupos = re.findall(r'(?s).*?group-title="([^"]+)', datos, re.DOTALL)
+    
+    almacen_grupos = []
+    
+    for grupo in grupos:
+        if grupo not in almacen_grupos:
+            almacen_grupos.append(grupo)
+    for t in range(len(almacen_grupos)):
+        plugintools.add_item(action="iptv4_res", title = "[B][UPPERCASE][COLOR yellow]" + almacen_grupos[t] + "[/COLOR][/UPPERCASE][/B]", url=url, extra = almacen_grupos[t],
+                             fanart = 'https://i.imgur.com/xdn0NDc.jpg' , thumbnail = 'https://i.imgur.com/GgGFDmd.jpg', folder=True, isPlayable=False) 
+        
+def iptv4_res(params):
+    
+    seleccion = (params.get("extra")).strip()
+    url = "http://perillas.mendelux.es/vio.txt"
+    llamada = requests.get(url)
+    datos = llamada.text
+    
+    matches = re.findall(r'(?s).*?name="(.*?)".*?logo="(.*?)".*?title="(.*?)".*?\n.*?(ht.*?://.*?/.*?/.*?/[A-Za-z0-9_]+)', datos, re.DOTALL )
+    for title, thumb,grup, url in matches:
+        if grup.strip() in seleccion:
             plugintools.add_item ( action = "resolve_without_resolveurl" , title = "[B][UPPERCASE][COLOR yellow]" + title + "[/COLOR][/UPPERCASE][/B]" , url = url , thumbnail = thumb , fanart = thumb , folder = False , isPlayable = True )
-    else:
-        xbmcgui.Dialog().notification('Info', 'Contraseña Incorrecta', xbmcgui.NOTIFICATION_ERROR, 4000)
-        #os.remove(password_file)
-        main_list(params)
+       
+
+def alegres(params):  
+   class Password:
+       def __init__(self):
+           self.password = plugintools.read("http://perillas.mendelux.es/password.txt").split('"')[1].split('"')[0]
+           self.profile = translatePath(xbmcaddon.Addon().getAddonInfo('profile')) if six.PY3 else translatePath(
+            xbmcaddon.Addon().getAddonInfo('profile'))
+           self.passfile = self.profile + 'clave.txt'
+
+       def check(self):
+           global password_file
+           if not os.path.isfile(self.passfile):
+               password = xbmcgui.Dialog().input('Introduzca la contraseña para entrar al Addon:')
+               if password == plugintools.read("http://perillas.mendelux.es/password.txt").split('"')[1].split('"')[0]:
+                   if not os.path.exists(self.profile): os.makedirs(self.profile)
+                   password_file = self.passfile
+                   f = open(password_file, 'w+')
+                   f.write(password)
+                   return True
+               else:
+                   return False
+           else:
+               password_file = self.passfile
+               with open(self.passfile, 'r') as f:
+                   password = f.read()
+               if password == plugintools.read("http://perillas.mendelux.es/password.txt").split('"')[1].split('"')[0]:
+                   return True
+               else:
+                   return False
+
+   if Password().check() == True:
+      url = "http://perillas.mendelux.es/alegres.txt"
+      llamada = requests.get(url)
+      datos = llamada.text
+      
+      #(?s).*?name="(.*?)".*?logo="(.*?)".*?title="(.*?)".*?\n(ht.*?://.*?/.*?/.*?/[A-Za-z0-9_]+)
+      
+      matches = re.findall(r'(?s).*?name="(.*?)".*?logo="(.*?)".*?title="(.*?)".*?\n.*?(ht.*?://.*?/.*?/.*?/[A-Za-z0-9_]+)', datos )
+      for title, thumb, grup, url in matches:
+         plugintools.add_item ( action = "resolve_without_resolveurl" , title = "[B][UPPERCASE][COLOR yellow]" + title + "[/COLOR][/UPPERCASE][/B]" , url = url , thumbnail = thumb , fanart = thumb , folder = False , isPlayable = True )
+   else:
+      xbmcgui.Dialog().notification('Info', 'Contraseña Incorrecta', xbmcgui.NOTIFICATION_ERROR, 4000)
+    #os.remove(password_file)
+      iptv(params)
      
 
 def cine(params):
@@ -283,6 +317,13 @@ def canalesacestream(params):
 
    plugintools.add_item(action = "" , title = "", thumbnail="", fanart="", folder=False)  
 
+   plugintools.add_item(action = "ace1" , title = "[COLOR magenta][B]->LISTA ACESTREAM 1<- [COLOR lime]<<[COLOR lightpink]Necesario Acestream[COLOR lime]>>[/B][/COLOR]", thumbnail ="https://i.imgur.com/OqADwwu.jpg", fanart = "https://i.imgur.com/xdn0NDc.jpg", folder = True )
+
+   plugintools.add_item(action = "ace2" , title = "[COLOR fuchsia][B]->LISTA ACESTREAM 2<- [COLOR lime]<<[COLOR lightpink]Necesario Acestream[COLOR lime]>>[/B][/COLOR]", thumbnail ="https://i.imgur.com/OqADwwu.jpg", fanart = "https://i.imgur.com/xdn0NDc.jpg", folder = True )
+ 
+
+def ace1(params):
+    
    url3 = "https://antonieta.futbolgratis.workers.dev/"
    request_headers = []
    request_headers.append ( ["User-Agent" , "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:92.0) Gecko/20100101 Firefox/92.0"] )
@@ -293,6 +334,17 @@ def canalesacestream(params):
       title.strip()
       plugintools.add_item(action = "resolve_acestream",title="[COLOR yellow][B]" + title + "[/COLOR][/B]",  url = url, thumbnail = "https://i.imgur.com/PUj0KAx.jpg", fanart = "https://i.imgur.com/Yd9lDfr.jpg", folder = False, isPlayable = True)
 
+def ace2(params):
+    
+   url3 = "https://pastebin.com/raw/E1yBvqHa"
+   request_headers = []
+   request_headers.append ( ["User-Agent" , "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:92.0) Gecko/20100101 Firefox/92.0"] )
+   read_url, response_headers = plugintools.read_body_and_headers ( url3 , headers = request_headers )
+   url = read_url.strip ()
+   matches = re.findall(r'(?s).*?<canal>(.*?)<canal>.*?<id>(.*?)<', url, re.DOTALL )
+   for nombre_canal, id in matches:
+      plugintools.add_item ( action = "resolve_acestream" , title = "[COLOR yellow][B]" + nombre_canal + "[/B][/COLOR]" , plot = id, url="", thumbnail = "https://i.imgur.com/EoXwni5.jpg"  , fanart = "https://i.imgur.com/lHvis9j.jpg" , folder = False , isPlayable = True )
+ 
 
      
 def extrenosRober(params):
