@@ -105,7 +105,7 @@ def iptv(params):
 
    plugintools.add_item(action = "alegres" , title = "[COLOR lime][B]->TV ADULTOS<-[/B][/COLOR]", thumbnail ="https://i.imgur.com/HCiV6ND.jpg", fanart = "https://i.imgur.com/kgSbSPb.jpg", folder = True )
 
-   plugintools.add_item(action = "canalesacestream" , title = "[COLOR yellow][B]->LISTA ACESTREAM<- [COLOR lime]*<[COLOR red]Necesario Acestream[COLOR lime]>*[/B][/COLOR]", thumbnail ="https://i.imgur.com/OqADwwu.jpg", fanart = "https://i.imgur.com/xdn0NDc.jpg", folder = True )
+   plugintools.add_item(action = "canalesacestream" , title = "[COLOR yellow][B]->LISTA ACESTREAM<- [COLOR lime]<<[COLOR lightpink]Necesario Acestream[COLOR lime]>>[/B][/COLOR]", thumbnail ="https://i.imgur.com/OqADwwu.jpg", fanart = "https://i.imgur.com/xdn0NDc.jpg", folder = True )
   
     
 
