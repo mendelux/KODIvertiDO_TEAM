@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
 <addon
-	id="plugin.video.KovertidoTeamTvCine" version="1.6" name="[B][COLOR white]Kodi[COLOR gold]verti[COLOR yellow]do[COLOR gold]Team[COLOR lightpink]Tv[COLOR lime]Cine[/COLOR][/B]" provider-name="equipo KODIvertiDO TEAM">
+	id="plugin.video.KovertidoTeamTvCine" version="1.7" name="[B][COLOR white]Kodi[COLOR gold]verti[COLOR yellow]do[COLOR gold]Team[COLOR lightpink]Tv[COLOR lime]Cine[/COLOR][/B]" provider-name="equipo KODIvertiDO TEAM">
 <requires>
     <import addon="script.module.requests" />
     <import addon="script.module.resolveurl" />
@@ -20,8 +20,11 @@
 		<platform>all</platform>
 <assets>
         <icon>icon.gif</icon>
+  <screenshot>resources/screenshots/screenshot1.gif</screenshot>
+  <screenshot>resources/screenshots/screenshot3.gif</screenshot>
+  <screenshot>resources/screenshots/screenshot2.jpg</screenshot>
         <fanart>fanart.jpg</fanart>
-    </assets>
+</assets>
 		<language>es</language>
 	</extension>
 </addon>
