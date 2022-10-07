@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addon
-	id="plugin.video.KovertidoTeamTvCine" version="1.77" name="[B][COLOR white]Kodi[COLOR gold]verti[COLOR yellow]do[COLOR gold]Team[COLOR lightpink]Tv[COLOR lime]Cine[/COLOR][/B]" provider-name="equipo KODIvertiDO TEAM">
+	id="plugin.video.KovertidoTeamTvCine" version="1.78" name="[B][COLOR white]Kodi[COLOR gold]verti[COLOR yellow]do[COLOR gold]Team[COLOR lightpink]Tv[COLOR lime]Cine[/COLOR][/B]" provider-name="equipo KODIvertiDO TEAM">
 <requires>
-    <import addon="script.module.requests" />
-    <import addon="script.module.resolveurl" /> 
+    <import addon="script.module.requests" optional="true" />
+    <import addon="script.module.resolveurl" optional="true" />
+	<import addon="script.module.six" optional="true" />
+	<import addon="plugin.video.youtube" optional="true" />
   </requires>
 	<extension point="xbmc.python.pluginsource" library="default.py">
 		<provides>video</provides>
