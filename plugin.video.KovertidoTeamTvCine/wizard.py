@@ -40,11 +40,11 @@ VERSION        = ADDON.getAddonInfo('version')
 USER_AGENT     = 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36 SE 2.X MetaSr 1.0'
 DIALOG         = xbmcgui.Dialog()
 DP             = xbmcgui.DialogProgress()
-HOME           = xbmc.translatePath('special://home/')
-XBMC           = xbmc.translatePath('special://xbmc/')
-LOG            = xbmc.translatePath('special://logpath/')
-PROFILE        = xbmc.translatePath('special://profile/')
-TEMPDIR        = xbmc.translatePath('special://temp')
+HOME           = xbmcvfs.translatePath('special://home/')
+XBMC           = xbmcvfs.translatePath('special://xbmc/')
+LOG            = xbmcvfs.translatePath('special://logpath/')
+PROFILE        = xbmcvfs.translatePath('special://profile/')
+TEMPDIR        = xbmcvfs.translatePath('special://temp')
 ADDONS         = os.path.join(HOME,      'addons')
 USERDATA       = os.path.join(HOME,      'userdata')
 PLUGIN         = os.path.join(ADDONS,    ADDON_ID)
@@ -861,7 +861,7 @@ def createQR():
 	DIALOG.ok(ADDONTITLE, "[COLOR %s]The QRCode image has been created and is located in the addondata directory:[/COLOR]" % COLOR2, "[COLOR %s]%s[/COLOR]" % (COLOR1, image.replace(HOME, '')))
 
 def cleanupBackup():
-	mybuilds = xbmc.translatePath(MYBUILDS)
+	mybuilds = xbmcvfs.translatePath(MYBUILDS)
 	folder = glob.glob(os.path.join(mybuilds, "*"))
 	list = []; filelist = []
 	if len(folder) == 0:
@@ -881,7 +881,7 @@ def cleanupBackup():
 		LogNotify("[COLOR %s]%s[/COLOR]" % (COLOR1, ADDONTITLE), "[COLOR %s]Borrado Cancelado![/COLOR]" % COLOR2)
 	elif selected == 0:
 		if DIALOG.yesno(ADDONTITLE, "[COLOR %s]]Quieres borrar todos los archivos de la carpeta 'MisBuilds'?[/COLOR]" % COLOR2, "[COLOR %s]%s[/COLOR]" % (COLOR1, MYBUILDS), yeslabel="[B][COLOR springgreen]Borrar[/COLOR][/B]", nolabel="[B][COLOR red]No, Cancelar[/COLOR][/B]"):
-			clearedfiles, clearedfolders = cleanHouse(xbmc.translatePath(MYBUILDS))
+			clearedfiles, clearedfolders = cleanHouse(xbmcvfs.translatePath(MYBUILDS))
 			LogNotify("[COLOR %s]%s[/COLOR]" % (COLOR1, ADDONTITLE), "[COLOR %s]Archivos Eliminados: [COLOR %s]%s[/COLOR] / Carpetas:[/COLOR] [COLOR %s]%s[/COLOR]" % (COLOR2, COLOR1, clearedfiles, COLOR1, clearedfolders))
 		else:
 			LogNotify("[COLOR %s]%s[/COLOR]" % (COLOR1, ADDONTITLE), "[COLOR %s]Borrar Cancelado![/COLOR]" % COLOR2)
@@ -1407,8 +1407,8 @@ def backUpOptions(type, name=""):
 					(os.path.join(ADDOND, 'plugin.video.seren', 'torrentScrape.db')),
 					(os.path.join(ADDOND, 'script.module.simplecache', 'simplecache.db'))]
 
-	backup   = xbmc.translatePath(BACKUPLOCATION)
-	mybuilds = xbmc.translatePath(MYBUILDS)
+	backup   = xbmcvfs.translatePath(BACKUPLOCATION)
+	mybuilds = xbmcvfs.translatePath(MYBUILDS)
 	try:
 		if not os.path.exists(backup): xbmcvfs.mkdirs(backup)
 		if not os.path.exists(mybuilds): xbmcvfs.mkdirs(mybuilds)
@@ -1424,7 +1424,7 @@ def backUpOptions(type, name=""):
 			name = '%s.zip' % name; tempzipname = ''
 			zipname = os.path.join(mybuilds, name)
 			try:
-				zipf = zipfile.ZipFile(xbmc.translatePath(zipname), mode='w')
+				zipf = zipfile.ZipFile(xbmcvfs.translatePath(zipname), mode='w')
 			except:
 				try:
 					tempzipname = os.path.join(PACKAGES, '%s.zip' % name)
@@ -1519,7 +1519,7 @@ def backUpOptions(type, name=""):
 			asciiCheck(HOME, True)
 			extractsize = 0
 			try:
-				zipf = zipfile.ZipFile(xbmc.translatePath(zipname), mode='w')
+				zipf = zipfile.ZipFile(xbmcvfs.translatePath(zipname), mode='w')
 			except:
 				try:
 					tempzipname = os.path.join(PACKAGES, '%s.zip' % name)
@@ -1641,7 +1641,7 @@ def backUpOptions(type, name=""):
 			with open(info, 'a') as f:
 				f.write('name="%s"\n' % name)
 				f.write('extracted="%s"\n' % extractsize)
-				f.write('zipsize="%s"\n' % os.path.getsize(xbmc.translatePath(zipname)))
+				f.write('zipsize="%s"\n' % os.path.getsize(xbmcvfs.translatePath(zipname)))
 				f.write('skin="%s"\n' % currSkin())
 				f.write('created="%s"\n' % datetime.now().date())
 				f.write('programs="%s"\n' % ', '.join(programs) if len(programs) > 0 else 'programs="none"\n')
@@ -1659,7 +1659,7 @@ def backUpOptions(type, name=""):
 			asciiCheck(USERDATA, True)
 		else: guiname = name
 		guiname = urllib.quote_plus(guiname); tempguizipname = ''
-		guizipname = xbmc.translatePath(os.path.join(mybuilds, '%s_guisettings.zip' % guiname))
+		guizipname = xbmcvfs.translatePath(os.path.join(mybuilds, '%s_guisettings.zip' % guiname))
 		if os.path.exists(GUISETTINGS):
 			try:
 				zipf = zipfile.ZipFile(guizipname, mode='w')
@@ -1719,7 +1719,7 @@ def backUpOptions(type, name=""):
 		themename = urllib.quote_plus(themename); tempzipname = ''
 		zipname = os.path.join(mybuilds, '%s.zip' % themename)
 		try:
-			zipf = zipfile.ZipFile(xbmc.translatePath(zipname), mode='w')
+			zipf = zipfile.ZipFile(xbmcvfs.translatePath(zipname), mode='w')
 		except:
 			try:
 				tempzipname = os.path.join(PACKAGES, '%s.zip' % themename)
@@ -1842,10 +1842,10 @@ def backUpOptions(type, name=""):
 			log("[Back Up] Type = '%s': %s" % (type, str(e)), xbmc.LOGNOTICE)
 			DIALOG.ok(ADDONTITLE, "[COLOR %s]%s[/COLOR][COLOR %s] theme zip failed:[/COLOR]" % (COLOR1, themename, COLOR2), "[COLOR %s]%s[/COLOR]" % (COLOR1, str(e)))
 			if not tempzipname == '':
-				try: os.remove(xbmc.translatePath(tempzipname))
+				try: os.remove(xbmcvfs.translatePath(tempzipname))
 				except Exception as e: log(str(e))
 			else:
-				try: os.remove(xbmc.translatePath(zipname))
+				try: os.remove(xbmcvfs.translatePath(zipname))
 				except Exception as e: log(str(e))
 			return
 		zipf.close()
@@ -1864,7 +1864,7 @@ def backUpOptions(type, name=""):
 			name = '%s_addondata.zip' % name; tempzipname = ''
 			zipname = os.path.join(mybuilds, name)
 			try:
-				zipf = zipfile.ZipFile(xbmc.translatePath(zipname), mode='w')
+				zipf = zipfile.ZipFile(xbmcvfs.translatePath(zipname), mode='w')
 			except:
 				try:
 					tempzipname = os.path.join(PACKAGES, '%s.zip' % name)
@@ -1923,8 +1923,8 @@ def backUpOptions(type, name=""):
 			DIALOG.ok(ADDONTITLE, "[COLOR %s]%s[/COLOR] [COLOR %s]Copia realizada:[/COLOR]" % (COLOR1, name, COLOR2), "[COLOR %s]%s[/COLOR]" % (COLOR1, zipname))
 
 def restoreLocal(type):
-	backup   = xbmc.translatePath(BACKUPLOCATION)
-	mybuilds = xbmc.translatePath(MYBUILDS)
+	backup   = xbmcvfs.translatePath(BACKUPLOCATION)
+	mybuilds = xbmcvfs.translatePath(MYBUILDS)
 	try:
 		if not os.path.exists(backup): xbmcvfs.mkdirs(backup)
 		if not os.path.exists(mybuilds): xbmcvfs.mkdirs(mybuilds)
@@ -1953,7 +1953,7 @@ def restoreLocal(type):
 		DP.update(0, '[COLOR %s]Unable to read zipfile from current location.' % COLOR2, 'Copying file to packages')
 		pack = os.path.join('special://home', 'addons', 'packages', fn)
 		xbmcvfs.copy(file, pack)
-		file = xbmc.translatePath(pack)
+		file = xbmcvfs.translatePath(pack)
 		DP.update(0, '', 'Copying file to packages: Complete')
 		zipfile.ZipFile(file, 'r')
 	percent, errors, error = extract.all(file,loc,DP)
@@ -2075,8 +2075,8 @@ def Grab_Log(file=False, old=False, wizard=False):
 		return False
 
 def whiteList(do):
-	backup   = xbmc.translatePath(BACKUPLOCATION)
-	mybuilds = xbmc.translatePath(MYBUILDS)
+	backup   = xbmcvfs.translatePath(BACKUPLOCATION)
+	mybuilds = xbmcvfs.translatePath(MYBUILDS)
 	if   do == 'edit':
 		fold = glob.glob(os.path.join(ADDONS, '*/'))
 		addonnames = []; addonids = []; addonfolds = []

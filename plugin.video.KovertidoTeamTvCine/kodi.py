@@ -10,6 +10,7 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 import xbmcplugin
+import xbmcvfs
 
 try:
     import strings
@@ -55,7 +56,7 @@ progressDialog = xbmcgui.DialogProgress()
 
 windowDialog = xbmcgui.WindowDialog()
 
-artwork = xbmc.translatePath(os.path.join('special://home', 'addons', addon_id, 'art/'))
+artwork = xbmcvfs.translatePath(os.path.join('special://home', 'addons', addon_id, 'art/'))
 
 fanart = artwork + 'fanart.jpg'
 
@@ -421,7 +422,7 @@ def read_file(path, contents='', params=None, headers={}, verify_ssl=False, time
 
 
 def translate_path(path):
-    return xbmc.translatePath(path).decode('utf-8')
+    return xbmcvfs.translatePath(path).decode('utf-8')
 
 
 def execute_jsonrpc(command):

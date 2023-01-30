@@ -1,5 +1,6 @@
 import zipfile
 import xbmc
+import xbmcvfs
 import sys
 import traceback
 import kodi
