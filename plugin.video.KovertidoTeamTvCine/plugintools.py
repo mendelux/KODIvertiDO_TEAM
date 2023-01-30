@@ -53,6 +53,7 @@ import gzip
 import six
 from six.moves import urllib_request
 from six.moves.urllib.parse import unquote_plus, quote_plus, urlencode
+import xbmcvfs
 module_log_enabled = False
 http_debug_log_enabled = False
 if six.PY3:
@@ -446,7 +447,7 @@ def show_picture(url):
 def get_temp_path():
     _log("get_temp_path")
 
-    dev = xbmc.translatePath( "special://temp/" )
+    dev = xbmcvfs.translatePath( "special://temp/" )
     _log("get_temp_path ->'"+str(dev)+"'")
 
     return dev
@@ -454,7 +455,7 @@ def get_temp_path():
 def get_runtime_path():
     _log("get_runtime_path")
 
-    dev = xbmc.translatePath( __settings__.getAddonInfo('Path') )
+    dev = xbmcvfs.translatePath( __settings__.getAddonInfo('Path') )
     _log("get_runtime_path ->'"+str(dev)+"'")
 
     return dev
@@ -462,7 +463,7 @@ def get_runtime_path():
 def get_data_path():
     _log("get_data_path")
 
-    dev = xbmc.translatePath( __settings__.getAddonInfo('Profile') )
+    dev = xbmcvfs.translatePath( __settings__.getAddonInfo('Profile') )
     
     # Parche para XBMC4XBOX
     if not os.path.exists(dev):
