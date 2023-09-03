@@ -1,5 +1,5 @@
 """
-    Plugin for ResolveUrl
+    Plugin for ResolveURL
     Copyright (C) 2020 gujal
 
     This program is free software: you can redistribute it and/or modify
@@ -15,13 +15,12 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 from resolveurl.plugins.__resolve_generic__ import ResolveGeneric
 
 
 class YouDBoxResolver(ResolveGeneric):
-    name = "youdbox"
-    domains = ['youdbox.com']
-    pattern = r'(?://|\.)(youdbox\.com)/(?:embed-)?(\w+)'
-
-    def get_url(self, host, media_id):
-        return self._default_get_url(host, media_id, template='https://{host}/embed-{media_id}.html')
+    name = 'YouDBox'
+    domains = ['youdbox.com', 'youdbox.net', 'youdbox.org', 'yodbox.com', 'youdboox.com',
+               'youdbox.site']
+    pattern = r'(?://|\.)(you?dboo?x\.(?:com|net|org|site))/(?:embed-)?(\w+)'

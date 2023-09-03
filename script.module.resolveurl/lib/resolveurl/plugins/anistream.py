@@ -1,5 +1,5 @@
 """
-    Plugin for ResolveUrl
+    Plugin for ResolveURL
     Copyright (C) 2020 Anis
 
     This program is free software: you can redistribute it and/or modify
@@ -16,16 +16,15 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from resolveurl.plugins.lib import helpers
+from resolveurl.lib import helpers
 import re
-import base64
 from resolveurl import common
 from resolveurl.resolver import ResolveUrl, ResolverError
 
 
 class AniStreamResolver(ResolveUrl):
-    name = "ani-stream"
-    domains = ["ani-stream.com"]
+    name = 'AniStream'
+    domains = ['ani-stream.com']
     pattern = r'(?://|\.)(ani-stream\.com)/(?:embed-)?([0-9a-zA-Z-]+)'
 
     def get_media_url(self, host, media_id):
@@ -34,7 +33,7 @@ class AniStreamResolver(ResolveUrl):
         html = self.net.http_GET(web_url, headers=headers).content
         r = re.search(r'base64,([^"]+)', html)
         if r:
-            html = base64.b64decode(r.group(1)).decode('utf-8')
+            html = helpers.b64decode(r.group(1))
             sources = helpers.scrape_sources(html)
             if sources:
                 return helpers.pick_source(helpers.sort_sources_list(sources)) + helpers.append_headers(headers)

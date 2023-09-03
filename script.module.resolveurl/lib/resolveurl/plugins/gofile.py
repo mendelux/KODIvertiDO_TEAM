@@ -1,6 +1,6 @@
 """
     Plugin for ResolveURL
-    Copyright (C) 2019  script.module.resolveurl
+    Copyright (C) 2022 shellc0de
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,32 +16,43 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import re
 import json
-from six.moves import urllib_parse
-from resolveurl.plugins.lib import helpers
+from resolveurl.lib import helpers
 from resolveurl import common
 from resolveurl.resolver import ResolveUrl, ResolverError
 
 
-class GofileResolver(ResolveUrl):
-    name = 'gofile'
+class GoFileResolver(ResolveUrl):
+    name = 'GoFile'
     domains = ['gofile.io']
     pattern = r'(?://|\.)(gofile\.io)/(?:\?c=|d/)([0-9a-zA-Z]+)'
 
     def get_media_url(self, host, media_id):
         web_url = self.get_url(host, media_id)
         headers = {'User-Agent': common.FF_USER_AGENT, 'Referer': web_url}
-        download_serv = json.loads(self.net.http_GET('https://apiv2.' + host + '/getServer?c=' + media_id, headers=headers).content)
-        if (download_serv['status'] == 'ok'):
-            download_url = json.loads(self.net.http_GET('https://' + download_serv['data']['server'] + '.' + host + '/getUpload?c=' + media_id, headers=headers).content)
-            sources = []
-            if(download_url['data']['files']):
-                for file_index in download_url['data']['files']:
-                    url = urllib_parse.quote(download_url['data']['files'][file_index]['link'], ':/')
-                    size = download_url['data']['files'][file_index]['size']
-                    sources += [(size, url)]
-            return helpers.pick_source(sources, False)
-        raise ResolverError('Unable to locate video')
+        base_api = 'https://api.gofile.io'
+        r = self.net.http_GET('{}/createAccount'.format(base_api), headers=headers)
+        token = json.loads(r.content).get('data').get('token')
+        if not token:
+            raise ResolverError('Unable to retrieve token!')
+
+        r = self.net.http_GET('https://{}/dist/js/alljs.js'.format(host), headers=headers).content
+        wtoken = re.search(r'websiteToken\s*=\s*"([^"]+)', r)
+        if not wtoken:
+            raise ResolverError('Unable to retrieve websiteToken!')
+
+        content_url = '{}/getContent?contentId={}&token={}&websiteToken={}'.format(
+            base_api, media_id, token, wtoken.group(1)
+        )
+        r = self.net.http_GET(content_url, headers=headers).content
+        data = json.loads(r).get('data').get('contents')
+        if not data:
+            raise ResolverError('This file does not exist.')
+
+        headers.update({'Cookie': 'accountToken={}'.format(token)})
+        sources = [(data[x].get('size'), data[x].get('link')) for x in data]
+        return helpers.pick_source(sources, False) + helpers.append_headers(headers)
 
     def get_url(self, host, media_id):
-        return self._default_get_url(host, media_id, template='https://{host}/?c={media_id}')
+        return self._default_get_url(host, media_id, template='https://{host}/d/{media_id}')

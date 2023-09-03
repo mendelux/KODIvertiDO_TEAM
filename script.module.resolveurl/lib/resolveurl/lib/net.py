@@ -19,8 +19,9 @@ import random
 from six.moves import http_cookiejar
 import gzip
 import re
+import json
 import six
-from six.moves import urllib_request, urllib_parse
+from six.moves import urllib_request, urllib_parse, urllib_error, urllib_response
 import socket
 import time
 from resolveurl.lib import kodi
@@ -41,6 +42,7 @@ RAND_UAS = ['Mozilla/5.0 ({win_ver}{feature}; rv:{br_ver}) Gecko/20100101 Firefo
             'Mozilla/5.0 ({win_ver}{feature}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{br_ver} Safari/537.36',
             'Mozilla/5.0 ({win_ver}{feature}; Trident/7.0; rv:{br_ver}) like Gecko',
             'Mozilla/5.0 (compatible; MSIE {br_ver}; {win_ver}{feature}; Trident/6.0)']
+CERT_FILE = kodi.translate_path('special://xbmc/system/certs/cacert.pem')
 
 
 def get_ua():
@@ -58,6 +60,18 @@ def get_ua():
     else:
         user_agent = kodi.get_setting('current_ua')
     return user_agent
+
+
+class NoRedirection(urllib_request.HTTPRedirectHandler):
+    def http_error_302(self, req, fp, code, msg, headers):
+        infourl = urllib_response.addinfourl(fp, headers, req.get_full_url() if six.PY2 else req.full_url)
+        infourl.status = code
+        infourl.code = code
+        return infourl
+    http_error_300 = http_error_302
+    http_error_301 = http_error_302
+    http_error_303 = http_error_302
+    http_error_307 = http_error_302
 
 
 class Net:
@@ -184,8 +198,20 @@ class Net:
             try:
                 import ssl
                 ctx = ssl.create_default_context()
+                ctx.set_alpn_protocols(['http/1.1'])
                 ctx.check_hostname = False
                 ctx.verify_mode = ssl.CERT_NONE
+                if self._http_debug:
+                    handlers += [urllib_request.HTTPSHandler(context=ctx, debuglevel=1)]
+                else:
+                    handlers += [urllib_request.HTTPSHandler(context=ctx)]
+            except:
+                pass
+        else:
+            try:
+                import ssl
+                ctx = ssl.create_default_context(cafile=CERT_FILE)
+                ctx.set_alpn_protocols(['http/1.1'])
                 if self._http_debug:
                     handlers += [urllib_request.HTTPSHandler(context=ctx, debuglevel=1)]
                 else:
@@ -196,7 +222,7 @@ class Net:
         opener = urllib_request.build_opener(*handlers)
         urllib_request.install_opener(opener)
 
-    def http_GET(self, url, headers={}, compression=True):
+    def http_GET(self, url, headers={}, compression=True, redirect=True):
         """
         Perform an HTTP GET request.
 
@@ -214,9 +240,9 @@ class Net:
             An :class:`HttpResponse` object containing headers and other
             meta-information about the page and the page content.
         """
-        return self._fetch(url, headers=headers, compression=compression)
+        return self._fetch(url, headers=headers, compression=compression, redirect=redirect)
 
-    def http_POST(self, url, form_data, headers={}, compression=True):
+    def http_POST(self, url, form_data, headers={}, compression=True, jdata=False):
         """
         Perform an HTTP POST request.
 
@@ -236,7 +262,7 @@ class Net:
             An :class:`HttpResponse` object containing headers and other
             meta-information about the page and the page content.
         """
-        return self._fetch(url, form_data, headers=headers, compression=compression)
+        return self._fetch(url, form_data, headers=headers, compression=compression, jdata=jdata)
 
     def http_HEAD(self, url, headers={}):
         """
@@ -284,7 +310,7 @@ class Net:
         response = urllib_request.urlopen(request)
         return HttpResponse(response)
 
-    def _fetch(self, url, form_data={}, headers={}, compression=True):
+    def _fetch(self, url, form_data={}, headers={}, compression=True, jdata=False, redirect=True):
         """
         Perform an HTTP GET or POST request.
 
@@ -307,7 +333,9 @@ class Net:
         """
         req = urllib_request.Request(url)
         if form_data:
-            if isinstance(form_data, six.string_types):
+            if jdata:
+                form_data = json.dumps(form_data)
+            elif isinstance(form_data, six.string_types):
                 form_data = form_data
             else:
                 form_data = urllib_parse.urlencode(form_data, True)
@@ -318,9 +346,38 @@ class Net:
             req.add_header(key, headers[key])
         if compression:
             req.add_header('Accept-Encoding', 'gzip')
+        if jdata:
+            req.add_header('Content-Type', 'application/json')
         host = req.host if six.PY3 else req.get_host()
         req.add_unredirected_header('Host', host)
-        response = urllib_request.urlopen(req, timeout=15)
+        try:
+            if not redirect:
+                opener = urllib_request.build_opener(NoRedirection())
+                response = opener.open(req, timeout=20)
+            else:
+                response = urllib_request.urlopen(req, timeout=15)
+        except urllib_error.HTTPError as e:
+            if e.code == 403 and 'cloudflare' in e.hdrs.get('Expect-CT', ''):
+                import ssl
+                ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+                ctx.set_alpn_protocols(['http/1.1'])
+                handlers = [urllib_request.HTTPSHandler(context=ctx)]
+                opener = urllib_request.build_opener(*handlers)
+                try:
+                    response = opener.open(req, timeout=15)
+                except urllib_error.HTTPError as e:
+                    if e.code == 403:
+                        ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1_1)
+                        ctx.set_alpn_protocols(['http/1.1'])
+                        handlers = [urllib_request.HTTPSHandler(context=ctx)]
+                        opener = urllib_request.build_opener(*handlers)
+                        try:
+                            response = opener.open(req, timeout=15)
+                        except urllib_error.HTTPError as e:
+                            response = e
+            else:
+                raise
+
         return HttpResponse(response)
 
 
@@ -328,8 +385,8 @@ class HttpResponse:
     """
     This class represents a resoponse from an HTTP request.
 
-    The content is examined and every attempt is made to properly encode it to
-    Unicode.
+    The content is examined and every attempt is made to properly decode it to
+    Unicode unless the nodecode property flag is set to True.
 
     .. seealso::
         :meth:`Net.http_GET`, :meth:`Net.http_HEAD` and :meth:`Net.http_POST`
@@ -345,6 +402,7 @@ class HttpResponse:
             to :func:`urllib2.urlopen`.
         """
         self._response = response
+        self._nodecode = False
 
     @property
     def content(self):
@@ -355,6 +413,9 @@ class HttpResponse:
                 html = gzip.GzipFile(fileobj=six.BytesIO(html)).read()
         except:
             pass
+
+        if self._nodecode:
+            return html
 
         try:
             content_type = self._response.headers['content-type']
@@ -380,9 +441,15 @@ class HttpResponse:
         """Returns headers returned by the server.
         If as_dict is True, headers are returned as a dictionary otherwise a list"""
         if as_dict:
-            return dict([(item[0].title(), item[1]) for item in list(self._response.info().items())])
+            hdrs = {}
+            for item in list(self._response.info().items()):
+                if item[0].title() not in list(hdrs.keys()):
+                    hdrs.update({item[0].title(): item[1]})
+                else:
+                    hdrs.update({item[0].title(): ','.join([hdrs[item[0].title()], item[1]])})
+            return hdrs
         else:
-            return self._response.info()._headers
+            return self._response.info()._headers if six.PY3 else [(x.split(':')[0].strip(), x.split(':')[1].strip()) for x in self._response.info().headers]
 
     def get_url(self):
         """
@@ -390,3 +457,12 @@ class HttpResponse:
         a redirect was followed.
         """
         return self._response.geturl()
+
+    def nodecode(self, nodecode):
+        """
+        Sets whether or not content returns decoded text
+        nodecode (bool): Set to ``True`` to allow content to return undecoded data
+        suitable to write to a binary file
+        """
+        self._nodecode = bool(nodecode)
+        return self

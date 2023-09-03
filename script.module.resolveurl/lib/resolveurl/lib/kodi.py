@@ -15,11 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import xbmcaddon
-import xbmcplugin
-import xbmcgui
-import xbmc
-import xbmcvfs
+from kodi_six import xbmc, xbmcgui, xbmcplugin, xbmcaddon, xbmcvfs
 from six.moves import urllib_parse
 import six
 import sys
@@ -34,18 +30,20 @@ get_setting = addon.getSetting
 show_settings = addon.openSettings
 sleep = xbmc.sleep
 _log = xbmc.log
+py_ver = sys.version
+py_info = sys.version_info
 
 
 def get_path():
-    return addon.getAddonInfo('path') if six.PY3 else addon.getAddonInfo('path').decode('utf-8')
+    return addon.getAddonInfo('path')
 
 
 def get_profile():
-    return addon.getAddonInfo('profile') if six.PY3 else addon.getAddonInfo('profile').decode('utf-8')
+    return addon.getAddonInfo('profile')
 
 
 def translate_path(path):
-    return xbmcvfs.translatePath(path) if six.PY3 else xbmc.translatePath(path).decode('utf-8')
+    return xbmcvfs.translatePath(path) if six.PY3 else xbmc.translatePath(path)
 
 
 def set_setting(id, value):
@@ -75,6 +73,13 @@ def kodi_version():
     """
 
     return float(xbmcaddon.Addon('xbmc.addon').getAddonInfo('version')[:4])
+
+
+def supported_video_extensions():
+    supported_video_extensions = xbmc.getSupportedMedia('video').split('|')
+    unsupported = ['.url', '.zip', '.rar', '.001', '.7z', '.tar.gz', '.tar.bz2',
+                   '.tar.xz', '.tgz', '.tbz2', '.gz', '.bz2', '.xz', '.tar', '']
+    return [i for i in supported_video_extensions if i not in unsupported]
 
 
 def open_settings():
@@ -130,7 +135,7 @@ else:
 
 def i18n(string_id):
     try:
-        return addon.getLocalizedString(strings.STRINGS[string_id]) if six.PY3 else addon.getLocalizedString(strings.STRINGS[string_id]).encode('utf-8', 'ignore')
+        return six.ensure_str(addon.getLocalizedString(strings.STRINGS[string_id]))
     except Exception as e:
         _log('Failed String Lookup: %s (%s)' % (string_id, e))
         return string_id
@@ -231,6 +236,10 @@ def get_current_view():
         for view in views.split(','):
             if xbmc.getInfoLabel('Control.GetLabel(%s)' % view):
                 return view
+
+
+def yesnoDialog(heading=get_name(), line1='', line2='', line3='', nolabel='', yeslabel=''):
+    return xbmcgui.Dialog().yesno(heading, line1 + '[CR]' + line2 + '[CR]' + line3, nolabel=nolabel, yeslabel=yeslabel)
 
 
 class WorkingDialog(object):

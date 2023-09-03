@@ -1,5 +1,5 @@
 """
-    NewTube Plugin for ResolveUrl
+    Plugin for ResolveURL
     Copyright (C) 2020 twilight0
 
     This program is free software: you can redistribute it and/or modify
@@ -17,14 +17,14 @@
 """
 
 from resolveurl.plugins.__resolve_generic__ import ResolveGeneric
-from resolveurl.plugins.lib import helpers
+from resolveurl.lib import helpers
 
 
-class NewtubeResolver(ResolveGeneric):
+class NewTubeResolver(ResolveGeneric):
 
-    name = "newtube.app"
+    name = 'NewTube'
     domains = ['newtube.app']
-    pattern = r'(?://|\.)(newtube\.app)/(?:user/\w+|embed)/(\w+)'
+    pattern = r'(?://|\.)(newtube\.app)/(?:user/)?(?:embed/|\w+)/(\w+)'
 
     def get_media_url(self, host, media_id):
 

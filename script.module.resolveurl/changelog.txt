@@ -1,16 +1,25 @@
-Version 5.1.12 (October 26, 2020)
+Version 5.1.108 (Sep 3, 2023)
 - Code Base Changes:
-    - None
+    - Update User-Agents
 
 - Resolvers Added:
-    - ElUpload
- 
+    - updown
+    - vidtube
+
 - Resolvers Fixed/Updated:
-    - MP4Upload
-    - Vidia
+    - dembed
+    - goload
+    - hdvid
+    - lulustream
+    - reviewrate
+    - speedostream
+    - vidguard
+    - vimoly
+    - voesx
+    - vtube
 
 - Resolvers Removed
     - None
 
 - Languages Added/Updated
-    - None
+    - All

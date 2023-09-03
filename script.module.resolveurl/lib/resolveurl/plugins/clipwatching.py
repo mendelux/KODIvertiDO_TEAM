@@ -16,28 +16,27 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import re
-from resolveurl.plugins.lib import helpers
+from resolveurl.lib import helpers
 from resolveurl import common
 from resolveurl.resolver import ResolveUrl, ResolverError
 
 
 class ClipWatchingResolver(ResolveUrl):
-    name = "clipwatching"
-    domains = ['clipwatching.com']
-    pattern = r'(?://|\.)(clipwatching\.com)/(?:embed-)?(\w+)'
+    name = 'ClipWatching'
+    domains = ['clipwatching.com', 'highstream.tv']
+    pattern = r'(?://|\.)((?:clipwatching\.com|highstream.tv))/(?:embed-)?(\w+)'
 
     def get_media_url(self, host, media_id):
         web_url = self.get_url(host, media_id)
         headers = {'User-Agent': common.RAND_UA}
         html = self.net.http_GET(web_url, headers=headers).content
-
-        if html:
-            _srcs = re.search(r'sources\s*:\s*\[(.+?)\]', html)
-            if _srcs:
-                srcs = helpers.scrape_sources(_srcs.group(1), patterns=['''["'](?P<url>http[^"']+)'''])
-                if srcs:
-                    headers.update({'Referer': web_url})
-                    return helpers.pick_source(srcs) + helpers.append_headers(headers)
+        html += helpers.get_packed_data(html)
+        _srcs = re.search(r'sources\s*:\s*\[(.+?)\]', html)
+        if _srcs:
+            srcs = helpers.scrape_sources(_srcs.group(1), patterns=['''["'](?P<url>http[^"']+)'''])
+            if srcs:
+                headers.update({'Referer': web_url})
+                return helpers.pick_source(srcs) + helpers.append_headers(headers)
 
         raise ResolverError('Unable to locate link')
 

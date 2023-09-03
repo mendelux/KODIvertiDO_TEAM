@@ -9,39 +9,31 @@
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program. If not, see <http://www.gnu.org/licenses/>.
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import re
-import base64
-from resolveurl.plugins.lib import helpers
-from resolveurl.plugins.lib import jsunpack
+from resolveurl.lib import helpers
 from resolveurl import common
 from resolveurl.resolver import ResolveUrl, ResolverError
 
 
-class StreamvidResolver(ResolveUrl):
-    name = "streamvid"
-    domains = ["streamvid.co"]
-    pattern = r'(?://|\.)(streamvid\.co)/player/([0-9a-zA-Z]+)'
+class StreamVidResolver(ResolveUrl):
+    name = 'StreamVid'
+    domains = ['streamvid.co', 'streamvid.cc']
+    pattern = r'(?://|\.)(streamvid\.(?:co|cc))/player/([0-9a-zA-Z]+)'
 
     def get_media_url(self, host, media_id):
         web_url = self.get_url(host, media_id)
         headers = {'User-Agent': common.RAND_UA,
                    'Referer': web_url}
         html = self.net.http_GET(web_url, headers=headers).content
-
-        r = re.findall(r'JuicyCodes\.Run\("([^)]+)"\)', html)
-
-        if r:
-            jc = r[-1].replace('"+"', '')
-            jc = base64.b64decode(jc.encode('ascii'))
-            jc = jsunpack.unpack(jc.decode('ascii'))
-            sources = helpers.scrape_sources(jc)
+        html = helpers.get_juiced_data(html)
+        sources = helpers.scrape_sources(html)
+        if sources:
             return helpers.pick_source(sources) + helpers.append_headers(headers)
 
         raise ResolverError('Video cannot be located.')

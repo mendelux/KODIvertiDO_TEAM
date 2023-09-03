@@ -15,10 +15,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 import re
 from six.moves import urllib_parse, urllib_error
 import json
-from resolveurl.plugins.lib import helpers
+from resolveurl.lib import helpers
 from resolveurl import common
 from resolveurl.common import i18n
 from resolveurl.resolver import ResolveUrl, ResolverError
@@ -48,8 +49,8 @@ token_path = '%s/token' % base_url
 
 # noinspection PyBroadException
 class PremiumizeMeResolver(ResolveUrl):
-    name = "Premiumize.me"
-    domains = ["*"]
+    name = 'Premiumize.me'
+    domains = ['*']
     media_url = None
 
     def __init__(self):
@@ -58,7 +59,7 @@ class PremiumizeMeResolver(ResolveUrl):
         self.net = common.Net()
         self.headers = {'User-Agent': USER_AGENT, 'Authorization': 'Bearer %s' % self.get_setting('token')}
 
-    def get_media_url(self, host, media_id, cached_only=False):
+    def get_media_url(self, host, media_id, cached_only=False, return_all=False):
         torrent = False
         cached = self.__check_cache(media_id)
         media_id_lc = media_id.lower()
@@ -68,7 +69,7 @@ class PremiumizeMeResolver(ResolveUrl):
                 torrent = True
         elif media_id_lc.endswith('.torrent') or media_id_lc.startswith('magnet:'):
             if self.get_setting('cached_only') == 'true' or cached_only:
-                raise ResolverError('Premiumize.me: Cached torrents only allowed to be initiated')
+                raise ResolverError('Premiumize.me: {0}'.format(i18n('cached_torrents_only')))
             torrent = True
             logger.log_debug('Premiumize.me: initiating transfer to cloud for %s' % media_id)
             self.__initiate_transfer(media_id)
@@ -76,10 +77,13 @@ class PremiumizeMeResolver(ResolveUrl):
                 self.__clear_finished()
             # self.__delete_folder()
 
-        link = self.__direct_dl(media_id, torrent=torrent)
-        if link is not None:
-            logger.log_debug('Premiumize.me: Resolved to %s' % link)
-            return link + helpers.append_headers(self.headers)
+        link = self.__direct_dl(media_id, torrent=torrent, return_all=return_all)
+        if link:
+            if return_all:
+                return link
+            else:
+                logger.log_debug('Premiumize.me: Resolved to %s' % link)
+                return link + helpers.append_headers(self.headers)
 
         raise ResolverError('Link Not Found')
 
@@ -204,9 +208,12 @@ class PremiumizeMeResolver(ResolveUrl):
         transfer_info = self.__list_transfer(transfer_id)
         if transfer_info:
             line1 = transfer_info.get('name')
-            line2 = 'Saving torrent to the Premiumize Cloud'
+            line2 = i18n('pm_save')
             line3 = transfer_info.get('message')
-            with common.kodi.ProgressDialog('ResolveURL Premiumize Transfer', line1, line2, line3) as pd:
+            with common.kodi.ProgressDialog(
+                'ResolveURL Premiumize {0}'.format(i18n('transfer')),
+                line1, line2, line3
+            ) as pd:
                 while not transfer_info.get('status') == 'seeding':
                     common.kodi.sleep(1000 * interval)
                     transfer_info = self.__list_transfer(transfer_id)
@@ -215,19 +222,21 @@ class PremiumizeMeResolver(ResolveUrl):
                     logger.log_debug(line3)
                     pd.update(int(float(transfer_info.get('progress')) * 100), line1=line1, line3=line3)
                     if pd.is_canceled():
-                        self.__delete_transfer(transfer_id)
-                        # self.__delete_folder()
-                        raise ResolverError('Transfer ID %s canceled by user' % transfer_id)
+                        keep_transfer = common.kodi.yesnoDialog(
+                            heading='ResolveURL Premiumize {0}'.format(i18n('transfer')),
+                            line1=i18n('pm_background')
+                        )
+                        if not keep_transfer:
+                            self.__delete_transfer(transfer_id)
+                        raise ResolverError('Transfer ID {0} :: {1}'.format(transfer_id, i18n('user_cancelled')))
                     elif transfer_info.get('status') == 'stalled':  # not sure on this value
                         self.__delete_transfer(transfer_id)
-                        # self.__delete_folder()
                         raise ResolverError('Transfer ID %s has stalled' % transfer_id)
             common.kodi.sleep(1000 * interval)  # allow api time to generate the stream_link
-        # self.__delete_transfer(transfer_id)  # just in case __clear_finished() doesnt work
 
         return
 
-    def __direct_dl(self, media_id, torrent=False):
+    def __direct_dl(self, media_id, torrent=False, return_all=False):
         try:
             data = urllib_parse.urlencode({'src': media_id})
             response = self.net.http_POST(direct_dl_path, form_data=data, headers=self.headers).content
@@ -235,13 +244,19 @@ class PremiumizeMeResolver(ResolveUrl):
             if 'status' in result:
                 if result.get('status') == 'success':
                     if torrent:
-                        _videos = [(int(item.get('size')), item.get('link')) for item in result.get("content")
-                                   if any(item.get('path').lower().endswith(x)
-                                          for x in FORMATS)]
-                        try:
-                            return max(_videos)[1]
-                        except ValueError:
-                            raise ResolverError('Failed to locate largest video file')
+                        if return_all:
+                            sources = [{'name': link.get('path').split('/')[-1], 'link': link.get('link')}
+                                       for link in result.get("content")
+                                       if any(link.get('path').lower().endswith(x) for x in FORMATS)]
+                            return sources
+                        else:
+                            _videos = [(int(item.get('size')), item.get('link'))
+                                       for item in result.get("content")
+                                       if any(item.get('path').lower().endswith(x) for x in FORMATS)]
+                            try:
+                                return max(_videos)[1]
+                            except ValueError:
+                                raise ResolverError('Failed to locate largest video file')
                     else:
                         return result.get('location', None)
                 else:
@@ -322,10 +337,12 @@ class PremiumizeMeResolver(ResolveUrl):
     def authorize_resolver(self):
         data = {'response_type': 'device_code', 'client_id': CLIENT_ID}
         js_result = json.loads(self.net.http_POST(token_path, form_data=data, headers=self.headers).content)
-        line1 = 'Go to URL: %s' % js_result.get('verification_uri')
-        line2 = 'When prompted enter: %s' % js_result.get('user_code')
-        with common.kodi.CountdownDialog('Resolve URL Premiumize Authorization', line1, line2, countdown=120,
-                                         interval=js_result.get('interval', 5)) as cd:
+        line1 = '{0}: {1}'.format(i18n('goto_url'), js_result.get('verification_uri'))
+        line2 = '{0}: {1}'.format(i18n('enter_prompt'), js_result.get('user_code'))
+        with common.kodi.CountdownDialog(
+            'Resolve URL Premiumize {0}'.format(i18n('authorisation')), line1, line2,
+            countdown=180, interval=js_result.get('interval', 5)
+        ) as cd:
             result = cd.start(self.__get_token, [js_result.get('device_code')])
 
         # cancelled

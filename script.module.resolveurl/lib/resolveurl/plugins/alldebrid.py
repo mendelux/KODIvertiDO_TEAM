@@ -1,6 +1,5 @@
 """
     Plugin for ResolveURL
-    v4 api updates
     Copyright (c) 2020 gujal
 
     This program is free software: you can redistribute it and/or modify
@@ -20,7 +19,7 @@
 import re
 from six.moves import urllib_parse, urllib_error
 import json
-from resolveurl.plugins.lib import helpers
+from resolveurl.lib import helpers
 from resolveurl import common
 from resolveurl.common import i18n
 from resolveurl.resolver import ResolveUrl, ResolverError
@@ -37,7 +36,7 @@ api_url = 'https://api.alldebrid.com/v4'
 
 
 class AllDebridResolver(ResolveUrl):
-    name = "AllDebrid"
+    name = 'AllDebrid'
     domains = ['*']
 
     def __init__(self):
@@ -46,7 +45,7 @@ class AllDebridResolver(ResolveUrl):
         self.hosts = None
         self.headers = {'User-Agent': USER_AGENT}
 
-    def get_media_url(self, host, media_id, cached_only=False):
+    def get_media_url(self, host, media_id, cached_only=False, return_all=False):
         try:
             if media_id.lower().startswith('magnet:'):
                 r = re.search('''magnet:.+?urn:([a-zA-Z0-9]+):([a-zA-Z0-9]+)''', media_id, re.I)
@@ -57,17 +56,23 @@ class AllDebridResolver(ResolveUrl):
                         transfer_id = self.__create_transfer(_hash)
                     else:
                         if self.get_setting('cached_only') == 'true' or cached_only:
-                            raise ResolverError('AllDebrid: Cached torrents only allowed to be initiated')
+                            raise ResolverError('AllDebrid: {0}'.format(i18n('cached_torrents_only')))
                         else:
                             transfer_id = self.__create_transfer(_hash)
                             self.__initiate_transfer(transfer_id)
 
                     transfer_info = self.__list_transfer(transfer_id)
-                    sources = [(link.get('size'), link.get('link'))
-                               for link in transfer_info.get('links')
-                               if any(link.get('filename').lower().endswith(x) for x in FORMATS)]
-                    media_id = max(sources)[1]
-                    self.__delete_transfer(transfer_id)
+                    if return_all:
+                        sources = [{'name': link.get('filename').split('/')[-1], 'link': link.get('link')}
+                                   for link in transfer_info.get('links')
+                                   if any(link.get('filename').lower().endswith(x) for x in FORMATS)]
+                        return sources
+                    else:
+                        sources = [(link.get('size'), link.get('link'))
+                                   for link in transfer_info.get('links')
+                                   if any(link.get('filename').lower().endswith(x) for x in FORMATS)]
+                        media_id = max(sources)[1]
+                        self.__delete_transfer(transfer_id)
 
             url = '{0}/link/unlock?agent={1}&apikey={2}&link={3}'.format(api_url, urllib_parse.quote_plus(AGENT), self.get_setting('token'), urllib_parse.quote_plus(media_id))
             result = self.net.http_GET(url, headers=self.headers).content
@@ -102,20 +107,27 @@ class AllDebridResolver(ResolveUrl):
                     if js_data.get('data').get('link'):
                         return js_data.get('data').get('link')
 
-        raise ResolverError('AllDebrid: no stream returned')
+        raise ResolverError('AllDebrid: {0}'.format(i18n('no_stream')))
 
     def __check_cache(self, media_id):
         url = '{0}/magnet/instant?agent={1}&apikey={2}&magnets[]={3}'.format(api_url, urllib_parse.quote_plus(AGENT), self.get_setting('token'), media_id.lower())
         result = self.net.http_GET(url, headers=self.headers).content
         result = json.loads(result)
-        if result.get('status', False) == "success":
+        if result.get('status') == "success":
             magnets = result.get('data').get('magnets')
             for magnet in magnets:
-                if media_id == magnet.get('magnet') or media_id == magnet.get('hash'):
+                if media_id.lower() == magnet.get('magnet').lower() or media_id.lower() == magnet.get('hash').lower():
                     response = magnet.get('instant', False)
                     return response
-
-        return False
+        else:
+            ecode = result.get('error', {}).get('code', '')
+            if ecode == "AUTH_BLOCKED":
+                logger.log_debug('Exception during AD auth: {0}'.format(ecode))
+                raise ResolverError(i18n('validate'))
+            elif ecode == "AUTH_USER_BANNED":
+                logger.log_debug('Exception during AD auth: {0}'.format(ecode))
+                raise ResolverError(i18n('banned'))
+            return False
 
     def __list_transfer(self, transfer_id):
         url = '{0}/magnet/status?agent={1}&apikey={2}&id={3}'.format(api_url, urllib_parse.quote_plus(AGENT), self.get_setting('token'), transfer_id)
@@ -128,8 +140,15 @@ class AllDebridResolver(ResolveUrl):
                         return magnet
             else:
                 return magnets
-
-        return {}
+        else:
+            ecode = result.get('error', {}).get('code', '')
+            if ecode == "AUTH_BLOCKED":
+                logger.log_debug('Exception during AD auth: {0}'.format(ecode))
+                raise ResolverError(i18n('validate'))
+            elif ecode == "AUTH_USER_BANNED":
+                logger.log_debug('Exception during AD auth: {0}'.format(ecode))
+                raise ResolverError(i18n('banned'))
+            return {}
 
     def __create_transfer(self, media_id):
         url = '{0}/magnet/upload?agent={1}&apikey={2}&magnets[]={3}'.format(api_url, urllib_parse.quote_plus(AGENT), self.get_setting('token'), media_id)
@@ -140,17 +159,24 @@ class AllDebridResolver(ResolveUrl):
             for magnet in magnets:
                 if media_id in magnet.get('magnet') or media_id.lower() == magnet.get('hash').lower():
                     return magnet.get('id')
-
-        return ""
+        else:
+            ecode = result.get('error', {}).get('code', '')
+            if ecode == "AUTH_BLOCKED":
+                logger.log_debug('Exception during AD auth: {0}'.format(ecode))
+                raise ResolverError(i18n('validate'))
+            elif ecode == "AUTH_USER_BANNED":
+                logger.log_debug('Exception during AD auth: {0}'.format(ecode))
+                raise ResolverError(i18n('banned'))
+            return ''
 
     def __initiate_transfer(self, transfer_id, interval=5):
         try:
             transfer_info = self.__list_transfer(transfer_id)
             if transfer_info:
                 line1 = transfer_info.get('filename')
-                line2 = 'Saving torrent to UptoBox via AllDebrid'
+                line2 = i18n('ad_uptobox')
                 line3 = transfer_info.get('status')
-                with common.kodi.ProgressDialog('ResolveURL AllDebrid Transfer', line1, line2, line3) as pd:
+                with common.kodi.ProgressDialog('ResolveURL AllDebrid {0}'.format(i18n('transfer')), line1, line2, line3) as pd:
                     while not transfer_info.get('statusCode') == 4:
                         common.kodi.sleep(1000 * interval)
                         transfer_info = self.__list_transfer(transfer_id)
@@ -160,22 +186,33 @@ class AllDebridResolver(ResolveUrl):
                         if transfer_info.get('statusCode') == 1:
                             download_speed = round(float(transfer_info.get('downloadSpeed')) / (1000**2), 2)
                             progress = int(float(transfer_info.get('downloaded')) / file_size * 100) if file_size > 0 else 0
-                            line3 = "Downloading at {0}MB/s from {1} peers, {2}% of {3}GB completed".format(download_speed, transfer_info.get('seeders'), progress, file_size2)
+                            line3 = "{0} {1}MB/s from {2} peers, {3}% {4} {5}GB {6}".format(
+                                i18n('downloading'), download_speed, transfer_info.get('seeders'), progress,
+                                i18n('of'), file_size2, i18n('completed')
+                            )
                         elif transfer_info.get('statusCode') == 3:
                             upload_speed = round(float(transfer_info.get('uploadSpeed')) / (1000 ** 2), 2)
                             progress = int(float(transfer_info.get('uploaded')) / file_size * 100) if file_size > 0 else 0
-                            line3 = "Uploading at {0}MB/s, {1}% of {2}GB completed".format(upload_speed, progress, file_size2)
+                            line3 = "{0} {1}MB/s, {2}% {3} {4}GB {5}".format(
+                                i18n('uploading'), upload_speed, progress, i18n('of'),
+                                file_size2, i18n('completed')
+                            )
                         else:
                             line3 = transfer_info.get('status')
                             progress = 0
                         logger.log_debug(line3)
                         pd.update(progress, line1=line1, line3=line3)
                         if pd.is_canceled():
-                            self.__delete_transfer(transfer_id)
-                            raise ResolverError('Transfer ID {0} :: Canceled by user'.format(transfer_id))
+                            keep_transfer = common.kodi.yesnoDialog(
+                                heading='ResolveURL AllDebrid {0}'.format(i18n('transfer')),
+                                line1=i18n('ad_background')
+                            )
+                            if not keep_transfer:
+                                self.__delete_transfer(transfer_id)
+                            raise ResolverError('{0} ID {1} :: {2}'.format(i18n('transfer'), transfer_id, i18n('user_cancelled')))
                         elif 5 <= transfer_info.get('statusCode') <= 10:
                             self.__delete_transfer(transfer_id)
-                            raise ResolverError('Transfer ID {0} :: {1}'.format(transfer_id, transfer_info.get('status')))
+                            raise ResolverError('{0} ID {1} :: {2}'.format(i18n('transfer'), transfer_id, transfer_info.get('status')))
 
                 common.kodi.sleep(1000 * interval)  # allow api time to generate the links
 
@@ -192,7 +229,7 @@ class AllDebridResolver(ResolveUrl):
             result = json.loads(response)
             if result.get('status', False) == "success":
                 if 'deleted' in response.get('data').get('message'):
-                    logger.log_debug('Transfer ID "{0}" deleted from the AllDebrid cloud'.format(transfer_id))
+                    logger.log_debug('Transfer ID "{0}" deleted from AllDebrid cloud'.format(transfer_id))
                     return True
         except:
             pass
@@ -287,10 +324,12 @@ class AllDebridResolver(ResolveUrl):
         url = '{0}/pin/get?agent={1}'.format(api_url, urllib_parse.quote_plus(AGENT))
         js_result = self.net.http_GET(url, headers=self.headers).content
         js_data = json.loads(js_result).get('data')
-        line1 = 'Go to URL: {0}'.format(js_data.get('base_url'))
-        line2 = 'When prompted enter: {0}'.format(js_data.get('pin'))
-        with common.kodi.CountdownDialog('ResolveUrl AllDebrid Authorization', line1, line2,
-                                         countdown=js_data.get('expires_in', 120)) as cd:
+        line1 = '{0}: {1}'.format(i18n('goto_url'), js_data.get('base_url'))
+        line2 = '{0}: {1}'.format(i18n('enter_prompt'), js_data.get('pin'))
+        with common.kodi.CountdownDialog(
+            'ResolveUrl AllDebrid {0}'.format(i18n('authorisation')), line1, line2,
+            countdown=js_data.get('expires_in', 120)
+        ) as cd:
             result = cd.start(self.__check_auth, [js_data.get('check_url')])
 
         # cancelled
@@ -318,6 +357,14 @@ class AllDebridResolver(ResolveUrl):
             if js_data.get("status", False) == "success":
                 js_data = js_data.get('data')
                 activated = js_data.get('activated', False)
+            else:
+                ecode = js_data.get('error', {}).get('code', '')
+                if ecode == "AUTH_BLOCKED":
+                    logger.log_debug('Exception during AD auth: {0}'.format(ecode))
+                    raise ResolverError(i18n('validate'))
+                elif ecode == "AUTH_USER_BANNED":
+                    logger.log_debug('Exception during AD auth: {0}'.format(ecode))
+                    raise ResolverError(i18n('banned'))
         except Exception as e:
             logger.log_debug('Exception during AD auth: {0}'.format(e))
         return activated
@@ -337,5 +384,5 @@ class AllDebridResolver(ResolveUrl):
         return cls.get_setting('enabled') == 'true' and cls.get_setting('token')
 
     @classmethod
-    def isUniversal(self):
+    def isUniversal(cls):
         return True

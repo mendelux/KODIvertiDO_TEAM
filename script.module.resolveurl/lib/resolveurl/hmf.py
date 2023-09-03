@@ -62,7 +62,7 @@ class HostedMediaFile:
         must pass either ``url`` or ``host`` AND ``media_id``.
     """
 
-    def __init__(self, url='', host='', media_id='', title='', include_disabled=False, include_universal=None, include_popups=None):
+    def __init__(self, url='', host='', media_id='', title='', include_disabled=False, include_universal=None, include_popups=None, return_all=False):
         """
         Args:
             url (str): a URL to a web page that represents a piece of media.
@@ -75,6 +75,7 @@ class HostedMediaFile:
         self._host = host
         self._media_id = media_id
         self._valid_url = None
+        self._return_all = return_all
         self.title = title if title else self._host
 
         if self._url:
@@ -121,7 +122,8 @@ class HostedMediaFile:
         regex = r"(?:www\.)?([\w\-]*\.[\w\-]{2,5}(?:\.[\w\-]{2,5})?)$"
         res = re.search(regex, domain)
         if res:
-            domain = res.group(1)
+            # domain = res.group(1)
+            domain = '.'.join(res.group(1).split('.')[-2:])
         domain = domain.lower()
         return domain
 
@@ -184,7 +186,13 @@ class HostedMediaFile:
                         common.logger.log_debug('Resolving using %s plugin' % resolver.name)
                         resolver.login()
                         self._host, self._media_id = resolver.get_host_and_id(self._url)
-                        stream_url = resolver.get_media_url(self._host, self._media_id)
+                        if self._return_all and resolver.isUniversal():
+                            url_list = resolver.get_media_url(self._host, self._media_id, return_all=self._return_all)
+                            self.__resolvers = [resolver]
+                            self._valid_url = True
+                            return url_list
+                        else:
+                            stream_url = resolver.get_media_url(self._host, self._media_id)
                         if stream_url.startswith("//"):
                             stream_url = 'http:%s' % stream_url
                         if stream_url and self.__test_stream(stream_url):
@@ -224,7 +232,6 @@ class HostedMediaFile:
                     if resolver.valid_url(self._url, self._domain):
                         resolvers.append(resolver)
                 except:
-                    # print sys.exc_info()
                     continue
 
             self.__resolvers = resolvers
@@ -249,9 +256,9 @@ class HostedMediaFile:
 
         try:
             import ssl
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
+            ssl_context = ssl._create_unverified_context()
+            ssl._create_default_https_context = ssl._create_unverified_context
+            ssl_context.set_alpn_protocols(['http/1.1'])
             opener = urllib_request.build_opener(urllib_request.HTTPSHandler(context=ssl_context))
             urllib_request.install_opener(opener)
         except:
@@ -259,14 +266,19 @@ class HostedMediaFile:
 
         try:
             msg = ''
+            if 'verifypeer' in headers.keys():
+                headers.pop('verifypeer')
             request = urllib_request.Request(stream_url.split('|')[0], headers=headers)
-            # only do a HEAD request. gujal
-            request.get_method = lambda: 'HEAD'
+            # only do a HEAD request for non m3u8 streams
+            if '.m3u8' not in stream_url:
+                request.get_method = lambda: 'HEAD'
             #  set urlopen timeout to 15 seconds
             http_code = urllib_request.urlopen(request, timeout=15).getcode()
         except urllib_error.HTTPError as e:
             if isinstance(e, urllib_error.HTTPError):
                 http_code = e.code
+                if http_code == 405 or http_code == 472:
+                    http_code = 200
             else:
                 http_code = 600
         except urllib_error.URLError as e:
@@ -283,7 +295,7 @@ class HostedMediaFile:
         except Exception as e:
             http_code = 601
             msg = str(e)
-            if msg == "''":
+            if msg == "''" or 'timed out' in msg:
                 http_code = 504
 
         # added this log line for now so that we can catch any logs on streams that are rejected due to test_stream failures
@@ -292,6 +304,9 @@ class HostedMediaFile:
             common.logger.log_warning('Stream UrlOpen Failed: Url: %s HTTP Code: %s Msg: %s' % (stream_url, http_code, msg))
 
         return int(http_code) < 400 or int(http_code) == 504
+
+    def __bool__(self):
+        return self.__nonzero__()
 
     def __nonzero__(self):
         if self._valid_url is None:
