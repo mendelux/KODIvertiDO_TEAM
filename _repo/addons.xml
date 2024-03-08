@@ -31,7 +31,7 @@
 	</extension>
 </addon>
 
-<addon	id="plugin.video.KODIvertiDO" version="1.6" name="[B][COLOR white]KODI[COLOR gold]verti[COLOR yellow]DO[/COLOR][/B]" provider-name="equipo KODIvertiDO TEAM">
+<addon	id="plugin.video.KODIvertiDO" version="1.7" name="[B][COLOR white]KODI[COLOR gold]verti[COLOR yellow]DO[/COLOR][/B]" provider-name="equipo KODIvertiDO TEAM">
 <requires>
     <import addon="script.module.requests" optional="true" />
     <import addon="script.module.resolveurl" optional="true" />
@@ -102,13 +102,13 @@
     </extension>
 </addon>
 
-<addon id="script.module.requests" name="requests" version="2.27.1+matrix.1" provider-name="Python Software Foundation">
+<addon id="script.module.requests" name="requests" version="2.31.0" provider-name="Python Software Foundation">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
-    <import addon="script.module.certifi" version="2022.5.18+matrix.1"/>
-    <import addon="script.module.chardet" version="4.0.0+matrix.1"/>
-    <import addon="script.module.idna" version="3.3.0+matrix.1"/>
-    <import addon="script.module.urllib3" version="1.26.9+matrix.1"/>
+    <import addon="script.module.certifi" version="2023.5.7"/>
+    <import addon="script.module.chardet" version="5.1.0"/>
+    <import addon="script.module.idna" version="3.4.0"/>
+    <import addon="script.module.urllib3" version="1.26.16+matrix.1"/>
   </requires>
   <extension point="xbmc.python.module" library="lib" />
   <extension point="xbmc.addon.metadata">
@@ -124,7 +124,7 @@
   </extension>
 </addon>
 
-<addon id="script.module.resolveurl" name="ResolveURL" version="5.1.108" provider-name="gujal">
+<addon id="script.module.resolveurl" name="ResolveURL" version="5.1.128" provider-name="gujal">
     <requires>
         <!-- <import addon="xbmc.python" version="3.0.0" /> -->
         <import addon="script.module.six" />
@@ -153,24 +153,20 @@
     </extension>
 </addon>
 
-<addon id="script.module.six"
-       name="six"
-       version="1.15.0+matrix.1"
-       provider-name="gutworth">
+<addon id="script.module.six" name="six" version="1.16.0+matrix.1" provider-name="Benjamin Peterson">
   <requires>
-    <import addon="xbmc.python"
-    		version="3.0.0"/>
+    <import addon="xbmc.python" version="3.0.0" />
   </requires>
   <extension point="xbmc.python.module" library="lib" />
   <extension point="xbmc.addon.metadata">
-    <summary lang="en_GB">Python 2 and 3 compatibility utilities.</summary>
-    <description lang="en_GB">Six is a Python 2 and 3 compatibility library. It provides utility functions for smoothing over the differences between the Python versions with the goal of writing Python code that is compatible on both Python versions. See the documentation for more information on what is provided.</description>
-    <platform>all</platform>
+    <summary lang="en_GB">Python 2 and 3 compatibility utilities</summary>
+    <description lang="en_GB">Python 2 and 3 compatibility utilities</description>
     <license>MIT</license>
+    <platform>all</platform>
+    <website>https://github.com/benjaminp/six</website>
     <source>https://github.com/benjaminp/six</source>
-    <website>https://pypi.org/project/six/</website>
     <assets>
-      <icon>icon.png</icon>
+      <icon>resources/icon.png</icon>
     </assets>
   </extension>
 </addon>
